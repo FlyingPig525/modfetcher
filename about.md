@@ -4,4 +4,4 @@
 
 Two new buttons are added to the "Account" menu in "Settings", "<co>Save Mods</c>" and "<co>Load Mods</c>"
 
-[More info](https://github.com/flyingpig525/modfetcher)
+[More info](https://github.com/FlyingPig525/modfetcher)
