@@ -1,0 +1,17 @@
+{
+	"geode": "4.9.0",
+	"gd": {
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
+	},
+	"id": "flyingpig525.mod_fetcher",
+	"name": "Mod Fetcher",
+	"version": "v1.0.0",
+	"developer": "FlyingPig525",
+	"description": "Allows you to automatically install specific mods on game launch, if you do not already have them",
+	"dependencies": {
+		"geode.node-ids": ">=v1.20.0"
+	}
+}

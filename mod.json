@@ -1,0 +1,37 @@
+{
+	"geode": "4.9.0",
+	"gd": {
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
+	},
+	"id": "flyingpig525.mod_fetcher",
+	"name": "Mod Fetcher",
+	"version": "v1.0.0",
+	"developer": "FlyingPig525",
+	"description": "Allows you to save and load mods between computers",
+	"dependencies": {
+		"geode.node-ids": ">=v1.20.0"
+	},
+	"resources": {
+		"sprites": [
+			"resources/*.png"
+		]
+	},
+	"settings": {
+		"set-configs": {
+			"name": "Set settings",
+			"description": "If true, mod settings will be fetched when loading",
+			"type": "bool",
+			"default": true
+		},
+		"server-password": {
+			"name": "Server password",
+			"description": "The password to use when accessing the Mod Fetcher server. It is recommended to change this value.\n<cr>Ensure this is not a password you use for any other service, there is no reason to trust me.</c>\n\nDefaults to a sha hash of your GD account password.",
+			"type": "string",
+			"default": "",
+			"filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+		}
+	}
+}
