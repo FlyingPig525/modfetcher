@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64")
 else()
@@ -22,4 +23,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
+
+CPMAddPackage("gh:GlobedGD/argon@1.4.1")
+target_link_libraries(${PROJECT_NAME} argon)
 setup_geode_mod(${PROJECT_NAME})
