@@ -46,6 +46,7 @@ jobs:
           export-symbols: true
           build-config: ${{ matrix.config.build-config || 'Release' }}
           target: ${{ matrix.config.target }}
+          ccache-variant: ${{ matrix.config.os != 'ubuntu-latest' && 'sccache' || '' }}
 
   package:
     name: Package builds
