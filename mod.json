@@ -13,5 +13,13 @@
 	"description": "Allows you to save/load mods & configs between computers",
 	"dependencies": {
 		"geode.node-ids": ">=v1.20.0"
+	},
+	"settings": {
+		"server-ip": {
+			"default": "http://localhost:8080",
+			"description": "An IP for a custom instance of the mod's server software",
+			"name": "Server IP",
+			"type": "string"
+		}
 	}
 }

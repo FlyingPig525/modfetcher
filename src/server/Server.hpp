@@ -10,10 +10,10 @@
 #include "argon/argon.hpp"
 #include "Geode/utils/coro.hpp"
 
-#define SERVER_IP "http://localhost:8080"
-#define CREATE_IP "http://localhost:8080/create"
-#define SAVE_IP   "http://localhost:8080/save"
-#define LOAD_IP   "http://localhost:8080/load"
+#define SERVER_IP Mod::get<>()->getSettingValue<std::string>("server-ip")
+#define CREATE_IP SERVER_IP + "/create"
+#define SAVE_IP   SERVER_IP + "/save"
+#define LOAD_IP   SERVER_IP + "/load"
 #define MOD_INFO_IP "https://api.geode-sdk.org/v1/mods"
 
 using namespace geode::prelude;
