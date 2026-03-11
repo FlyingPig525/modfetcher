@@ -27,11 +27,6 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         SaveRequest m_saveRequest;
         LoadRequest m_loadRequest;
 
-        std::vector<SavedMod> m_downloadingMods;
-
-        std::map<const std::string, ModDownloadRequest> m_modInfoRequests;
-        size_t m_toDownload;
-
         bool m_requestInProgress = false;
     };
 
@@ -298,6 +293,17 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                         mod.modId,
                         mod.version
                     );
+                    auto alert = FLAlertLayer::create(
+                        "Error!",
+                        fmt::format(
+                            "An error occurred: Mod version parse error: {}. Mod: {}, version {}",
+                            err.value_or("no message"),
+                            mod.modId,
+                            mod.version
+                        ),
+                        "Ok"
+                    );
+                    alert->show();
                     return;
                 }
                 auto modVersion = modVersionRes.ok().value();
@@ -319,12 +325,13 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         auto alert = ModTogglePopup::create(modsToFetch, [this] (std::vector<SavedMod> vec) {
             log::debug("Spawn download");
             AccountMenu::showLoadingUI();
-            async::spawn(downloadMods(vec));
+            async::spawn(downloadMods(std::move(vec)));
         });
         alert->show();
     }
 
     arc::Future<> downloadMods(std::vector<::SavedMod> mods) {
+        m_fields->m_requestInProgress = true;
         log::debug("downloading mods");
         FLUSH;
         log::debug("{}", mods.size());
@@ -386,7 +393,8 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
 
         Mod::get()->setSavedValue("configs-to-sync", configs);
 
-        queueInMainThread([this, errored, downloaded] () {
+        m_fields->m_requestInProgress = false;
+        queueInMainThread([this, errored, downloaded] {
             AccountLayer::hideLoadingUI();
             if (errored) {
                 auto alert = FLAlertLayer::create("Error!", "One or more <cr>errors</c> has occurred!", "Ok");
