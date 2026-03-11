@@ -11,11 +11,6 @@
 
 using namespace geode::prelude;
 
-#ifdef DEBUG
-#define FLUSH log::flush()
-#else
-#define FLUSH ;
-#endif
 
 #include <Geode/modify/AccountLayer.hpp>
 struct AccountMenu : Modify<AccountMenu, AccountLayer> {
@@ -333,7 +328,6 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     arc::Future<> downloadMods(std::vector<::SavedMod> mods) {
         m_fields->m_requestInProgress = true;
         log::debug("downloading mods");
-        FLUSH;
         log::debug("{}", mods.size());
         bool errored = false;
         int downloaded = 0;
