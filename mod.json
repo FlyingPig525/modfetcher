@@ -16,10 +16,11 @@
 	},
 	"settings": {
 		"server-ip": {
-			"default": "http://localhost:8080",
-			"description": "An IP for a custom instance of the mod's server software",
+			"default": "https://fetcher.grungus.cat",
+			"description": "An IP for a custom instance of the mod's server software. Must begin with http:// or https://",
 			"name": "Server IP",
-			"type": "string"
+			"type": "string",
+			"filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890:/._-"
 		}
 	}
 }
