@@ -6,13 +6,21 @@
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"id": "flyingpig525.mod_fetcher",
+	"id": "flyingpig525.mod-fetcher",
 	"name": "Mod Fetcher",
 	"version": "v1.0.0",
 	"developer": "FlyingPig525",
 	"description": "Allows you to save/load mods & configs between computers",
 	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
+		"geode.node-ids": ">=v1.23.0"
+	},
+	"links": {
+		"source": "https://github.com/FlyingPig525/modfetcher",
+		"homepage": "https://github.com/FlyingPig525/modfetcher"
+	},
+	"issues": {
+		"url": "https://github.com/FlyingPig525/modfetcher/issues",
+		"info": "The GitHub issues tag is the correct area to report bugs and other issues"
 	},
 	"settings": {
 		"server-ip": {
@@ -22,5 +30,8 @@
 			"type": "string",
 			"filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890:/._-"
 		}
-	}
+	},
+	"tags": [
+		"online", "utility", "enhancement", ""
+	]
 }
