@@ -327,15 +327,16 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
 
     arc::Future<> downloadMods(std::vector<::SavedMod> mods) {
         m_fields->m_requestInProgress = true;
-        log::debug("downloading mods");
-        log::debug("{}", mods.size());
+        log::info("Downloading {} mods", mods.size());
         bool errored = false;
         int downloaded = 0;
+        int configCount = 0;
         matjson::Value configs = matjson::makeObject({});
         for (auto mod : mods) {
             if (mod.syncConfig) {
                 configs.set(mod.modId, mod.config);
-                log::debug("Added config for geode mod {} to sync next restart", mod.modId);
+                configCount++;
+                log::info("Added config for geode mod {} to sync next restart", mod.modId);
             }
 
             if (!mod.toInstall) continue;
@@ -381,27 +382,37 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 errored = true;
                 continue;
             }
-            log::debug("Successfully downloaded geode mod {}", mod.modId);
+            log::info("Successfully downloaded geode mod {}", mod.modId);
             downloaded++;
         }
 
         Mod::get()->setSavedValue("configs-to-sync", configs);
 
         m_fields->m_requestInProgress = false;
-        queueInMainThread([this, errored, downloaded] {
+        queueInMainThread([this, errored, downloaded, configCount] {
             AccountLayer::hideLoadingUI();
             if (errored) {
                 auto alert = FLAlertLayer::create("Error!", "One or more <cr>errors</c> has occurred!", "Ok");
                 alert->show();
                 return;
             }
-            if (downloaded == 0) {
-                FLAlertLayer::create("Done!", "No mods have been installed", "Ok");
+            if (downloaded == 0 && configCount == 0) {
+                FLAlertLayer::create(
+                    "Done!",
+                    "<cy>No</c> mods have been <cg>installed</c>.\n"
+                    "<cf>No</c> configs have been <cg>synced</c>.",
+                    "Ok"
+                );
                 return;
             }
             geode::createQuickPopup(
                 "Done!",
-                fmt::format("<cy>{}</c> mods have been <cg>installed</c>", downloaded),
+                fmt::format(
+                    "<cy>{}</c> mod(s) have been <cg>installed</c>. \n"
+                    "<cf>{}</c> config(s) have been <cg>synced</c>.",
+                    downloaded,
+                    configCount
+                ),
                 "Restart Later",
                 "Restart",
                 [] (FLAlertLayer *layer, bool btn2) {

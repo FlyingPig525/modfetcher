@@ -29,9 +29,9 @@ protected:
         m_scroll->m_contentLayer->setLayout(ScrollLayer::createDefaultListLayout());
 
         const unsigned int rows = static_cast<unsigned int>(ceil(static_cast<float>(m_mods.size()) / 4.0f));
-        log::info("rows {} {} {}", rows, ((float)m_mods.size() / 4.0f), m_mods.size());
+        log::debug("rows {} {} {}", rows, ((float)m_mods.size() / 4.0f), m_mods.size());
         for (unsigned int row = 0; row < rows; row++) {
-            log::info("row {}", row);
+            log::debug("row {}", row);
             auto rowNode = CCNode::create();
             rowNode->setID(fmt::format("row-{}", row));
             rowNode->setLayout(SimpleRowLayout::create()
@@ -42,9 +42,9 @@ protected:
                 ->setGap(3.0f)
             );
             for (int column = 0; column < 4; column++) {
-                log::info("column {}", column);
+                log::debug("column {}", column);
                 if (m_mods.size() - 1 < (row * 4) + column) {
-                    log::info("vector cannot handle column. size: {}, accessing: {}", m_mods.size(), row * column);
+                    log::debug("vector cannot handle column. size: {}, accessing: {}", m_mods.size(), row * column);
                     break;
                 };
                 auto mod = &m_mods[(row * 4) + column];
@@ -84,16 +84,16 @@ protected:
     }
 
     void cancel(CCObject *sender) {
-        log::info("Cancelled");
+        log::debug("Cancelled");
         onClose(sender);
         // onClose(m_closeBtn);
     }
 
     void download(CCObject *sender) {
-        log::info("Download");
+        log::debug("Download");
         onClose(sender);
         for (auto mod : m_mods) {
-            log::debug(
+            log::info(
                 "id: {} version: {} installed: {} toInstall: {} sameVersion: {} syncConfig: {}",
                 mod.modId,
                 mod.version,
