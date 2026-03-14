@@ -27,6 +27,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
 
     void customSetup() override {
         AccountLayer::customSetup();
+        if (!m_isLoggedIn) return;
         changeLayout();
     }
 
