@@ -329,7 +329,8 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     arc::Future<> downloadMods(std::vector<::SavedMod> mods) {
         m_fields->m_requestInProgress = true;
         log::info("Downloading {} mods", mods.size());
-        bool errored = false;
+        bool fatalErrored = false;
+        std::vector<std::string> nonFatalErrors;
         int downloaded = 0;
         int configCount = 0;
         matjson::Value configs = matjson::makeObject({});
@@ -349,11 +350,24 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             if (!resp.ok()) {
                 if (resp.code() == -1) {
                     log::error("Failed to make request for {}. e: {}", mod.modId, resp.string().unwrapOr("?"));
+                } else if (resp.code() == 500) {
+                    // the only notable "recoverable" error
+                    log::error(
+                        "Mod not found {}. Mod: {}, version: {}, e: {}",
+                        resp.code(),
+                        mod.modId,
+                        mod.version,
+                        resp.string().unwrapOr("?")
+                    );
+                    nonFatalErrors.push_back(
+                        fmt::format("<cy>{}</c> could not be found! <cr>{}</c>", mod.modId, resp.string().unwrapOr("?"))
+                    );
+                    continue;
                 } else {
                     log::error("Server error {}. e: {}", resp.code(), resp.string().unwrapOr("?"));
                 }
                 log::error("Request error: {}", resp.errorMessage());
-                errored = true;
+                fatalErrored = true;
                 continue;
             }
 
@@ -363,7 +377,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 std::filesystem::remove(modPtr->getPackagePath(), errorCode);
                 if (errorCode) {
                     log::error("Unable to delete existing geode file {}", errorCode);
-                    errored = true;
+                    fatalErrored = true;
                     continue;
                 }
             }
@@ -373,14 +387,14 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             auto ok = file::writeBinary(filePath, data);
             if (!ok) {
                 log::error("{}", ok.unwrapErr());
-                errored = true;
+                fatalErrored = true;
                 continue;
             }
 
             auto meta = ModMetadata::createFromGeodeFile(filePath);
             if (meta.hasErrors()) {
                 log::error("Written metadata has errors: {}", fmt::join(meta.getErrors(), " & "));
-                errored = true;
+                fatalErrored = true;
                 continue;
             }
             log::info("Successfully downloaded geode mod {}", mod.modId);
@@ -390,41 +404,66 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         Mod::get()->setSavedValue("configs-to-sync", configs);
 
         m_fields->m_requestInProgress = false;
-        queueInMainThread([this, errored, downloaded, configCount] {
+        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount] {
             AccountLayer::hideLoadingUI();
-            if (errored) {
-                auto alert = FLAlertLayer::create("Error!", "One or more <cr>errors</c> has occurred!", "Ok");
+            if (fatalErrored) {
+                auto alert = FLAlertLayer::create("Fatal Error!", "One or more <cr>fatal</c> <cr>errors</c> have occurred!", "Ok");
                 alert->show();
+                // TODO: add backups
                 return;
             }
-            if (downloaded == 0 && configCount == 0) {
-                FLAlertLayer::create(
-                    "Done!",
-                    "<cy>No</c> mods have been <cg>installed</c>.\n"
-                    "<cf>No</c> configs have been <cg>synced</c>.",
-                    "Ok"
+            if (!nonFatalErrors.empty()) {
+                auto alert = createQuickPopup(
+                    "Non-Fatal Error!",
+                    fmt::format("One or more <cy>non-fatal</c> <cr>errors</c> have occurred!\n{}", fmt::join(nonFatalErrors, "\n")),
+                    "Ok", "",
+                    [downloaded, configCount, this] (FLAlertLayer *layer, bool btn2) {
+                        showDonePopups(downloaded, configCount);
+                    },
+                    false, false
                 );
-                return;
+                // auto width1 = alert->m_button1->getScaledContentWidth();
+                // auto width2 = alert->m_button2->getScaledContentWidth();
+                // auto lowX = alert->m_button1->getPositionX() - (width1 / 2);
+                // auto highX = alert->m_button2->getPositionX() + (width2 / 2);
+                // auto midX = ((highX - lowX) / 2) + lowX;
+                alert->show();
+                alert->m_button1->getParent()->setPositionX(0.0f);
+                alert->m_button2->getParent()->setPositionX(10000.0f);
+            } else {
+                showDonePopups(downloaded, configCount);
             }
-            geode::createQuickPopup(
-                "Done!",
-                fmt::format(
-                    "<cy>{}</c> mod(s) have been <cg>installed</c>. \n"
-                    "<cf>{}</c> config(s) have been <cg>synced</c>.",
-                    downloaded,
-                    configCount
-                ),
-                "Restart Later",
-                "Restart",
-                [] (FLAlertLayer *layer, bool btn2) {
-                    layer->setVisible(false);
-                    if (btn2) {
-                        utils::game::restart(true);
-                    }
-                    layer->removeFromParentAndCleanup(true);
-                }
-            );
         });
         co_return;
     };
+
+    void showDonePopups(int downloadCount, int configCount) {
+        if (downloadCount == 0 && configCount == 0) {
+            FLAlertLayer::create(
+                "Done!",
+                "<cy>No</c> mods have been <cg>installed</c>.\n"
+                "<cf>No</c> configs have been <cg>synced</c>.",
+                "Ok"
+            );
+            return;
+        }
+        geode::createQuickPopup(
+            "Done!",
+            fmt::format(
+                "<cy>{}</c> mod(s) have been <cg>installed</c>. \n"
+                "<cf>{}</c> config(s) have been <cg>synced</c>.",
+                downloadCount,
+                configCount
+            ),
+            "Restart Later",
+            "Restart",
+            [] (FLAlertLayer *layer, bool btn2) {
+                layer->setVisible(false);
+                if (btn2) {
+                    utils::game::restart(true);
+                }
+                layer->removeFromParentAndCleanup(true);
+            }
+        );
+    }
 };
