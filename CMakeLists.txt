@@ -23,6 +23,14 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
+# Windows specific settings
+if (WIN32)
+    # Disable annoying warnings
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
+
+    # Export all symbols for better debugging
+    set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 CPMAddPackage("gh:GlobedGD/argon@1.4.5")
 target_link_libraries(${PROJECT_NAME} argon)
