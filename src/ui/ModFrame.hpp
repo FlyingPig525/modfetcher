@@ -19,7 +19,6 @@ protected:
     CCMenu *m_configMenu = nullptr;
     CCMenuItemToggler *m_configToggler = nullptr;
 
-
     bool init() {
         if (!CCNode::init()) return false;
         this->setAnchorPoint(CCPoint{0.5f, 0.5f});
@@ -154,7 +153,6 @@ protected:
         m_mod->syncConfig = !m_mod->syncConfig;
     }
 public:
-
     static ModFrame *create(SavedMod *mod) {
         auto ret = new ModFrame();
         ret->m_mod = mod;

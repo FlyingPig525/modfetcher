@@ -3,6 +3,8 @@
 
 
 #include <Geode/utils/coro.hpp>
+
+#include "../cmake-build-crosscompile/_deps/asp2-src/include/asp/fs/fs.hpp"
 #include "Geode/ui/GeodeUI.hpp"
 #include "argon/argon.hpp"
 #include "server/Server.hpp"
@@ -13,6 +15,7 @@ using namespace geode::prelude;
 
 
 #include <Geode/modify/AccountLayer.hpp>
+#include <utility>
 struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     struct Fields {
         CCMenuItemSpriteExtra* m_modSaveButton = nullptr;
@@ -327,13 +330,22 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     }
 
     arc::Future<> downloadMods(std::vector<::SavedMod> mods) {
-        m_fields->m_requestInProgress = true;
-        log::info("Downloading {} mods", mods.size());
+        log::info("Downloading mods", mods.size());
         bool fatalErrored = false;
         std::vector<std::string> nonFatalErrors;
         int downloaded = 0;
         int configCount = 0;
         matjson::Value configs = matjson::makeObject({});
+
+        log::info("Creating backup");
+        auto backupRes = backupMods();
+        if (backupRes.isErr()) {
+            log::error("Error backing up mods: {}", backupRes.unwrapErr());
+            AccountLayer::hideLoadingUI();
+            co_return;
+        }
+        auto backupPath = backupRes.unwrap();
+        m_fields->m_requestInProgress = true;
         for (auto mod : mods) {
             if (mod.syncConfig) {
                 configs.set(mod.modId, mod.config);
@@ -378,7 +390,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 if (errorCode) {
                     log::error("Unable to delete existing geode file {}", errorCode);
                     fatalErrored = true;
-                    continue;
+                    break;
                 }
             }
 
@@ -388,14 +400,14 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             if (!ok) {
                 log::error("{}", ok.unwrapErr());
                 fatalErrored = true;
-                continue;
+                break;
             }
 
             auto meta = ModMetadata::createFromGeodeFile(filePath);
             if (meta.hasErrors()) {
                 log::error("Written metadata has errors: {}", fmt::join(meta.getErrors(), " & "));
                 fatalErrored = true;
-                continue;
+                break;
             }
             log::info("Successfully downloaded geode mod {}", mod.modId);
             downloaded++;
@@ -404,38 +416,83 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         Mod::get()->setSavedValue("configs-to-sync", configs);
 
         m_fields->m_requestInProgress = false;
-        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount] {
+        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount, backupPath] {
             AccountLayer::hideLoadingUI();
             if (fatalErrored) {
-                auto alert = FLAlertLayer::create("Fatal Error!", "One or more <cr>fatal</c> <cr>errors</c> have occurred!", "Ok");
-                alert->show();
-                // TODO: add backups
+                createSingleButtonQuickPopup(
+                    "Fatal Error!",
+                    "One or more <cr>fatal</c> <cr>errors</c> have occurred!\n<cy>Restoring backup</c>\n\n<cc>Check the logs for more info</c>",
+                    "Ok",
+                    [this, backupPath] (FLAlertLayer *layer) {
+                        auto restoreRes = restoreBackup(backupPath);
+                        if (restoreRes.isErr()) {
+                            log::error("Error restoring backup!");
+                            auto alert = FLAlertLayer::create("Backup Error!", "There was an <cr>error</c> restoring the backup!", "Ok");
+                            alert->show();
+                        }
+                    }
+                );
                 return;
             }
             if (!nonFatalErrors.empty()) {
-                auto alert = createQuickPopup(
+                createSingleButtonQuickPopup(
                     "Non-Fatal Error!",
                     fmt::format("One or more <cy>non-fatal</c> <cr>errors</c> have occurred!\n{}", fmt::join(nonFatalErrors, "\n")),
-                    "Ok", "",
-                    [downloaded, configCount, this] (FLAlertLayer *layer, bool btn2) {
+                    "Ok",
+                    [downloaded, configCount, this] (FLAlertLayer *layer) {
                         showDonePopups(downloaded, configCount);
-                    },
-                    false, false
+                    }
                 );
-                // auto width1 = alert->m_button1->getScaledContentWidth();
-                // auto width2 = alert->m_button2->getScaledContentWidth();
-                // auto lowX = alert->m_button1->getPositionX() - (width1 / 2);
-                // auto highX = alert->m_button2->getPositionX() + (width2 / 2);
-                // auto midX = ((highX - lowX) / 2) + lowX;
-                alert->show();
-                alert->m_button1->getParent()->setPositionX(0.0f);
-                alert->m_button2->getParent()->setPositionX(10000.0f);
             } else {
                 showDonePopups(downloaded, configCount);
             }
         });
         co_return;
-    };
+    }
+
+    FLAlertLayer *createSingleButtonQuickPopup(
+        char const *title,
+        std::string content,
+        char const *btn,
+        Function<void(FLAlertLayer*)> selected,
+        bool cancelledByEscape = true
+    ) {
+        auto s = &selected;
+        auto alert = createQuickPopup(
+                    title,
+                    std::move(content),
+                    btn, "",
+                    [s] (FLAlertLayer *layer, bool btn2) {
+                        s->operator()(layer);
+                    },
+                    false, cancelledByEscape
+                );
+        alert->show();
+        alert->m_button1->getParent()->setPositionX(0.0f);
+        alert->m_button2->getParent()->setPositionX(10000.0f);
+        return alert;
+    }
+
+    Result<file::Zip::Path> backupMods() {
+        auto filePath = dirs::getTempDir() / "mods-backup.zip";
+        if (asp::fs::exists(filePath)) {
+            auto deleteSuccess = asp::fs::removeFile(filePath);
+            if (deleteSuccess.isErr()) {
+                log::error("Error deleting old file");
+                return Err(deleteSuccess.unwrapErr().message());
+            }
+        }
+        GEODE_UNWRAP_INTO(auto file, file::Zip::create(filePath));
+        auto success = file.addAllFrom(dirs::getModsDir());
+        if (success.isErr()) {
+            return Err(success.unwrapErr());
+        }
+        return Ok(file.getPath());
+    }
+
+    Result<> restoreBackup(const file::Zip::Path& file) {
+        return file::Unzip::intoDir(file, dirs::getModsDir());
+    }
 
     void showDonePopups(int downloadCount, int configCount) {
         if (downloadCount == 0 && configCount == 0) {

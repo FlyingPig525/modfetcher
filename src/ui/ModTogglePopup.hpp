@@ -28,7 +28,7 @@ protected:
 
         m_scroll->m_contentLayer->setLayout(ScrollLayer::createDefaultListLayout());
 
-        const unsigned int rows = static_cast<unsigned int>(ceil(static_cast<float>(m_mods.size()) / 4.0f));
+        const auto rows = static_cast<unsigned int>(ceil(static_cast<float>(m_mods.size()) / 4.0f));
         log::debug("rows {} {} {}", rows, ((float)m_mods.size() / 4.0f), m_mods.size());
         for (unsigned int row = 0; row < rows; row++) {
             log::debug("row {}", row);
@@ -49,7 +49,7 @@ protected:
                 };
                 auto mod = &m_mods[(row * 4) + column];
                 auto frame = ModFrame::create(mod);
-                frame->setID(fmt::format("column-{}", column));
+                frame->setID(fmt::format("mod-{}", (row * 4) + column));
                 rowNode->addChild(frame);
             }
             rowNode->updateLayout();
