@@ -38,6 +38,10 @@ jobs:
 
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
+        with:
+          combine: true
+          build-config: ${{ matrix.config.build-config || 'Release' }}
+          target: ${{ matrix.config.target }}
 
   package:
     name: Package builds
