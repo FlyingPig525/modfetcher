@@ -456,16 +456,17 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         Function<void(FLAlertLayer*)> selected,
         bool cancelledByEscape = true
     ) {
-        auto s = &selected;
+        auto s = new Function(std::move(selected));
         auto alert = createQuickPopup(
-                    title,
-                    std::move(content),
-                    btn, "",
-                    [s] (FLAlertLayer *layer, bool btn2) {
-                        s->operator()(layer);
-                    },
-                    false, cancelledByEscape
-                );
+            title,
+            std::move(content),
+            btn, "",
+            [s] (FLAlertLayer *layer, bool btn2) {
+                s->operator()(layer);
+                delete s;
+            },
+            false, cancelledByEscape
+        );
         alert->show();
         alert->m_button1->getParent()->setPositionX(0.0f);
         alert->m_button2->getParent()->setPositionX(10000.0f);

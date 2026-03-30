@@ -54,7 +54,6 @@ WebFunc ModDownloadRequest::sendAsync() {
         )
     );
 
-
     co_return resp;
 }
 

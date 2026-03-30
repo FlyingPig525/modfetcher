@@ -45,30 +45,8 @@ struct SavedMod {
     }
 };
 
-struct Iteration {
-    int16_t iteration;
-    int64_t epochSeconds;
-};
-
 struct User {
     std::vector<::SavedMod> mods;
-    Iteration iteration;
-};
-
-template <>
-struct matjson::Serialize<Iteration> {
-    static geode::Result<Iteration> fromJson(Value const& value) {
-        GEODE_UNWRAP_INTO(const int16_t iteration, value["iteration"].asInt());
-        GEODE_UNWRAP_INTO(const int64_t epochSeconds, value["epochSeconds"].asInt());
-        return Ok(Iteration{ iteration, epochSeconds });
-    }
-
-    static Value toJson(Iteration const& i) {
-        auto value = Value();
-        value["iteration"] = i.iteration;
-        value["epochSeconds"] = i.epochSeconds;
-        return value;
-    }
 };
 
 template <>
@@ -93,14 +71,12 @@ template <>
 struct matjson::Serialize<User> {
     static geode::Result<User> fromJson(Value const& value) {
         GEODE_UNWRAP_INTO(std::vector<::SavedMod> mods, value["mods"].as<std::vector<::SavedMod>>());
-        GEODE_UNWRAP_INTO(Iteration iteration, value["iteration"].as<Iteration>());
-        return geode::Ok(User{ mods, iteration });
+        return geode::Ok(User{ mods });
     }
 
     static Value toJson(User const& user) {
         auto value = Value();
         value["mods"] = Serialize<std::vector<::SavedMod>>::toJson(user.mods);
-        value["iteration"] = matjson::Serialize<Iteration>::toJson(user.iteration);
         return value;
     }
 };
