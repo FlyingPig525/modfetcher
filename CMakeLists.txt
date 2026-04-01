@@ -32,6 +32,6 @@ if (WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-CPMAddPackage("gh:GlobedGD/argon@1.4.5")
+CPMAddPackage("gh:GlobedGD/argon@1.4.6")
 target_link_libraries(${PROJECT_NAME} argon)
 setup_geode_mod(${PROJECT_NAME})

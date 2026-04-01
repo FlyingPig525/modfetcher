@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include <Geode/binding/GJAccountManager.hpp>
+#include "../Defines.hpp"
 
 std::string token;
 

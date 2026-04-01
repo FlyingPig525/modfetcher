@@ -9,8 +9,10 @@
 #include "server/Server.hpp"
 #include "ui/ModFrame.hpp"
 #include "ui/ModTogglePopup.hpp"
+#include "Defines.hpp"
 
 using namespace geode::prelude;
+
 
 
 #include <Geode/modify/AccountLayer.hpp>
@@ -336,14 +338,17 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         int configCount = 0;
         matjson::Value configs = matjson::makeObject({});
 
-        // log::info("Creating backup");
-        // auto backupRes = backupMods();
-        // if (backupRes.isErr()) {
-            // log::error("Error backing up mods: {}", backupRes.unwrapErr());
-            // AccountLayer::hideLoadingUI();
-            // co_return;
-        // }
-        // auto backupPath = backupRes.unwrap();
+        log::info("Creating backup");
+        auto backupRes = backupMods();
+        if (backupRes.isErr()) {
+            log::error("Error backing up mods: {}", backupRes.unwrapErr());
+            AccountLayer::hideLoadingUI();
+            co_return;
+        }
+        // if something happens during the sync, give user the opportunity to load backup on next boot
+        log::debug("Setting unfinished status");
+        Mod::get<>()->setSavedValue(STATUS_ID, false);
+        auto backupPath = backupRes.unwrap();
         m_fields->m_requestInProgress = true;
         for (auto mod : mods) {
             if (mod.syncConfig) {
@@ -352,8 +357,13 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 log::info("Added config for geode mod {} to sync next restart", mod.modId);
             }
 
+            if (mod.syncConfig) {
+                log::error("Faking fatal");
+                fatalErrored = true;
+                break;
+            }
             if (!mod.toInstall) continue;
-            log::debug("{} {}", mod.modId, mod.version);
+            log::info("Downloading {} {}", mod.modId, mod.version);
             auto req = ModDownloadRequest(mod.modId, mod.version);
             log::debug("awaiting info req");
             auto resp = co_await req.sendAsync();
@@ -379,8 +389,9 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 }
                 log::error("Request error: {}", resp.errorMessage());
                 fatalErrored = true;
-                continue;
+                break;
             }
+            log::debug("Installing .geode file");
 
             // check if already installed (replace)
             if (auto modPtr = Loader::get()->getInstalledMod(mod.modId)) {
@@ -412,23 +423,25 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             downloaded++;
         }
 
-        Mod::get()->setSavedValue("configs-to-sync", configs);
+        Mod::get()->setSavedValue(CONFIG_ID, configs);
 
         m_fields->m_requestInProgress = false;
-        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount] {
+        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount, backupPath] {
             AccountLayer::hideLoadingUI();
             if (fatalErrored) {
                 createSingleButtonQuickPopup(
                     "Fatal Error!",
                     "One or more <cr>fatal</c> <cr>errors</c> have occurred!\n\n<cc>Check the logs for more info</c>",
-                    "Ok",
-                    [this] (FLAlertLayer *layer) {
-                        // auto restoreRes = restoreBackup(backupPath);
-                        // if (restoreRes.isErr()) {
-                            // log::error("Error restoring backup!");
-                            // auto alert = FLAlertLayer::create("Backup Error!", "There was an <cr>error</c> restoring the backup!", "Ok");
-                            // alert->show();
-                        // }
+                    "Restore Backup",
+                    [this, backupPath] (FLAlertLayer *layer) {
+                        auto restoreRes = restoreBackup(backupPath);
+                        if (restoreRes.isErr()) {
+                            log::error("Error restoring backup!");
+                            auto alert = FLAlertLayer::create("Backup Error!", "There was an <cr>error</c> restoring the backup!", "Ok");
+                            alert->show();
+                        } else {
+                            Mod::get()->setSavedValue("configs-to-sync", matjson::makeObject({}));
+                        }
                     }
                 );
                 return;
@@ -446,53 +459,9 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 showDonePopups(downloaded, configCount);
             }
         });
+        Mod::get<>()->setSavedValue(STATUS_ID, true);
         co_return;
     }
-
-    FLAlertLayer *createSingleButtonQuickPopup(
-        char const *title,
-        std::string content,
-        char const *btn,
-        Function<void(FLAlertLayer*)> selected,
-        bool cancelledByEscape = true
-    ) {
-        auto s = new Function(std::move(selected));
-        auto alert = createQuickPopup(
-            title,
-            std::move(content),
-            btn, "",
-            [s] (FLAlertLayer *layer, bool btn2) {
-                s->operator()(layer);
-                delete s;
-            },
-            false, cancelledByEscape
-        );
-        alert->show();
-        alert->m_button1->getParent()->setPositionX(0.0f);
-        alert->m_button2->getParent()->setPositionX(10000.0f);
-        return alert;
-    }
-
-    // Result<file::Zip::Path> backupMods() {
-        // auto filePath = dirs::getTempDir() / "mods-backup.zip";
-        // if (asp::::exists(filePath)) {
-            // auto deleteSuccess = asp::fs::removeFile(filePath);
-            // if (deleteSuccess.isErr()) {
-                // log::error("Error deleting old file");
-                // return Err(deleteSuccess.unwrapErr().message());
-            // }
-        // }
-        // GEODE_UNWRAP_INTO(auto file, file::Zip::create(filePath));
-        // auto success = file.addAllFrom(dirs::getModsDir());
-        // if (success.isErr()) {
-            // return Err(success.unwrapErr());
-        // }
-        // return Ok(file.getPath());
-    // }
-
-    // Result<> restoreBackup(const file::Zip::Path& file) {
-        // return file::Unzip::intoDir(file, dirs::getModsDir());
-    // }
 
     void showDonePopups(int downloadCount, int configCount) {
         if (downloadCount == 0 && configCount == 0) {

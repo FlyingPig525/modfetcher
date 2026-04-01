@@ -5,12 +5,36 @@
 #include <Geode/loader/ModSettingsManager.hpp>
 
 #include "server/Server.hpp"
+#include "Defines.hpp"
 
 using namespace geode;
 
 $on_game(ModsLoaded) {
     log::info("Setting configs");
     auto mod = geode::Mod::get<>();
+    // check completion status
+    if (mod->hasSavedValue(STATUS_ID)) {
+        auto syncStatus = mod->getSavedValue<bool>(STATUS_ID);
+        mod->setSavedValue(STATUS_ID, true);
+        if (!syncStatus) {
+            Mod::get()->setSavedValue("configs-to-sync", matjson::makeObject({}));
+            createQuickPopup(
+                "Fatal Error!",
+                "Something <cr>interrupted</c> the last load performed!\n\n<cc>Config sync will not be performed.</c>",
+                "Restore Backup", "Ok",
+                [] (FLAlertLayer *layer, bool btn2) {
+                    if (btn2) return;
+                    auto restoreRes = restoreBackup(dirs::getTempDir() / BACKUP_PATH);
+                    if (restoreRes.isErr()) {
+                        log::error("Error restoring backup!");
+                        auto alert = FLAlertLayer::create("Backup Error!", "There was an <cr>error</c> restoring the backup!", "Ok");
+                        alert->show();
+                    }
+                }
+            );
+            return;
+        }
+    }
     auto configs = mod->getSavedValue<matjson::Value>("configs-to-sync");
     log::debug("{}", configs.dump());
 

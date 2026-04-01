@@ -29,7 +29,6 @@ protected:
         m_scroll->m_contentLayer->setLayout(ScrollLayer::createDefaultListLayout());
 
         const auto rows = static_cast<unsigned int>(ceil(static_cast<float>(m_mods.size()) / 4.0f));
-        log::debug("rows {} {} {}", rows, ((float)m_mods.size() / 4.0f), m_mods.size());
         for (unsigned int row = 0; row < rows; row++) {
             log::debug("row {}", row);
             auto rowNode = CCNode::create();
