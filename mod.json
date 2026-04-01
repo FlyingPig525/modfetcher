@@ -8,7 +8,7 @@
 	},
 	"id": "flyingpig525.mod-fetcher",
 	"name": "Mod Fetcher",
-	"version": "v1.0.1",
+	"version": "v1.1.0",
 	"developer": "FlyingPig525",
 	"description": "Allows you to save/load mods & configs between computers",
 	"dependencies": {
