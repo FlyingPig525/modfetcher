@@ -31,7 +31,7 @@ static Result<> restoreBackup(const file::Zip::Path& file) {
     return file::Unzip::intoDir(file, dirs::getGeodeDir());
 }
 
-FLAlertLayer *createSingleButtonQuickPopup(
+inline FLAlertLayer *createSingleButtonQuickPopup(
     char const *title,
     std::string content,
     char const *btn,
