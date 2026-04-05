@@ -92,8 +92,8 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         if (m_fields->m_requestInProgress) return;
         AccountLayer::showLoadingUI();
         m_fields->m_loadRequest = LoadRequest();
-        m_fields->m_loadRequest.m_callback = [this] (web::WebResponse value) {
-            loadCallback(std::move(value));
+        m_fields->m_loadRequest.m_callback = [self = Ref(this)] (web::WebResponse value) {
+            self->loadCallback(std::move(value));
         };
         m_fields->m_requestInProgress = true;
         m_fields->m_loadRequest.send();
@@ -112,8 +112,8 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         }
         AccountLayer::showLoadingUI();
         m_fields->m_saveRequest = SaveRequest();
-        m_fields->m_saveRequest.m_callback = [this] (web::WebResponse value) {
-            saveCallback(std::move(value));
+        m_fields->m_saveRequest.m_callback = [self = Ref(this)] (web::WebResponse value) {
+            self->saveCallback(std::move(value));
         };
         m_fields->m_requestInProgress = true;
         m_fields->m_saveRequest.send(serverMods);
@@ -126,16 +126,16 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             "<co>An argon token (the authorization scheme behind globed) will be shared with the server to create a"
             " </c><cy>user entry</c>.",
             "Cancel", "Create",
-            [this] (FLAlertLayer *layer, bool btn2) {
+            [self = Ref(this)] (FLAlertLayer *layer, bool btn2) {
                 layer->setVisible(false);
                 if (btn2) {
-                    AccountLayer::showLoadingUI();
-                    m_fields->m_createRequest = CreateRequest();
-                    m_fields->m_createRequest.m_callback = [this] (web::WebResponse value) {
-                        createCallback(std::move(value));
+                    self->showLoadingUI();
+                    self->m_fields->m_createRequest = CreateRequest();
+                    self->m_fields->m_createRequest.m_callback = [self] (web::WebResponse value) {
+                        self->createCallback(std::move(value));
                     };
-                    m_fields->m_requestInProgress = true;
-                    m_fields->m_createRequest.send();
+                    self->m_fields->m_requestInProgress = true;
+                    self->m_fields->m_createRequest.send();
                 }
                 layer->removeFromParentAndCleanup(true);
             }
@@ -213,10 +213,10 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             "Success!",
             "Successfully created a user entry on the server.",
             "Ok", "Save",
-            [this] (FLAlertLayer *layer, bool btn2) {
+            [self = Ref(this)] (FLAlertLayer *layer, bool btn2) {
                 layer->setVisible(false);
                 if (btn2) {
-                    onSave(layer->m_button2);
+                    self->onSave(layer->m_button2);
                 }
                 layer->removeFromParentAndCleanup(true);
             }
@@ -322,10 +322,10 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             }
             modsToFetch.push_back(mod);
         }
-        auto alert = ModTogglePopup::create(modsToFetch, [this] (std::vector<SavedMod> vec) {
+        auto alert = ModTogglePopup::create(modsToFetch, [self = Ref(this)] (std::vector<SavedMod> vec) {
             log::debug("Spawn download");
-            AccountMenu::showLoadingUI();
-            async::spawn(downloadMods(std::move(vec)));
+            self->showLoadingUI();
+            async::spawn(self->downloadMods(std::move(vec)));
         });
         alert->show();
     }
@@ -426,14 +426,14 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         Mod::get()->setSavedValue(CONFIG_ID, configs);
 
         m_fields->m_requestInProgress = false;
-        queueInMainThread([this, fatalErrored, nonFatalErrors, downloaded, configCount, backupPath] {
-            AccountLayer::hideLoadingUI();
+        queueInMainThread([self = Ref(this), fatalErrored, nonFatalErrors, downloaded, configCount, backupPath] {
+            self->hideLoadingUI();
             if (fatalErrored) {
                 createSingleButtonQuickPopup(
                     "Fatal Error!",
                     "One or more <cr>fatal</c> <cr>errors</c> have occurred!\n\n<cc>Check the logs for more info</c>",
                     "Restore Backup",
-                    [this, backupPath] (FLAlertLayer *layer) {
+                    [self, backupPath] (FLAlertLayer *layer) {
                         auto restoreRes = restoreBackup(backupPath);
                         if (restoreRes.isErr()) {
                             log::error("Error restoring backup!");
@@ -451,12 +451,12 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                     "Non-Fatal Error!",
                     fmt::format("One or more <cy>non-fatal</c> <cr>errors</c> have occurred!\n{}", fmt::join(nonFatalErrors, "\n")),
                     "Ok",
-                    [downloaded, configCount, this] (FLAlertLayer *layer) {
-                        showDonePopups(downloaded, configCount);
+                    [downloaded, configCount, self] (FLAlertLayer *layer) {
+                        self->showDonePopups(downloaded, configCount);
                     }
                 );
             } else {
-                showDonePopups(downloaded, configCount);
+                self->showDonePopups(downloaded, configCount);
             }
         });
         Mod::get<>()->setSavedValue(STATUS_ID, true);
