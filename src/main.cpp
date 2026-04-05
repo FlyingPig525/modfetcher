@@ -143,7 +143,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     }
 
     void saveCallback(web::WebResponse value) {
-        if (value.cancelled()) {
+        if (value.cancelled() || value.timings().total.isZero()) {
             m_fields->m_requestInProgress = false;
             AccountLayer::hideLoadingUI();
             auto alert = FLAlertLayer::create(
@@ -178,7 +178,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     }
 
     void createCallback(web::WebResponse value) {
-        if (value.cancelled()) {
+        if (value.cancelled() || value.timings().total.isZero()) {
             m_fields->m_requestInProgress = false;
             AccountLayer::hideLoadingUI();
             auto alert = FLAlertLayer::create(
@@ -225,9 +225,9 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
     }
 
     void loadCallback(web::WebResponse value) {
-        if (value.cancelled()) {
-            m_fields->m_requestInProgress = false;
-            AccountLayer::hideLoadingUI();
+        m_fields->m_requestInProgress = false;
+        AccountLayer::hideLoadingUI();
+        if (value.cancelled() || value.timings().total.isZero()) {
             auto alert = FLAlertLayer::create(
                 "Error!",
                 "Something went wrong while loading",
@@ -236,8 +236,6 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             alert->show();
             return;
         }
-        m_fields->m_requestInProgress = false;
-        AccountLayer::hideLoadingUI();
         if (auto err = value.errorMessage(); !err.empty()) {
             auto alert = FLAlertLayer::create(
                 "Error!",
