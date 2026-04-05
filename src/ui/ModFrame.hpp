@@ -152,7 +152,12 @@ protected:
     void toggleConfig(CCObject *caller) {
         m_mod->syncConfig = !m_mod->syncConfig;
     }
+
 public:
+    void setConfigToggler(bool toggled) {
+        m_configToggler->toggleWithCallback(toggled);
+    }
+
     static ModFrame *create(SavedMod *mod) {
         auto ret = new ModFrame();
         ret->m_mod = mod;

@@ -8,12 +8,13 @@ class ModTogglePopup : public geode::Popup {
 protected:
     ScrollLayer *m_scroll = nullptr;
     Scrollbar *m_scrollbar = nullptr;
-    std::vector<CCNode*> m_rows;
     CCMenuItemSpriteExtra *m_cancelButton = nullptr;
     CCMenuItemSpriteExtra *m_downloadButton = nullptr;
+    CCMenuItemToggler *m_syncToggler = nullptr;
 
+    std::vector<CCNode*> m_rows;
     std::vector<SavedMod> m_mods;
-    bool m_syncConfigs = false;
+    std::vector<ModFrame*> m_frames;
 
     Function<void(std::vector<SavedMod>)> m_downloadCallback;
 
@@ -23,11 +24,13 @@ protected:
         m_downloadCallback = std::move(downloadCallback);
 
         this->setTitle("Mod Selection");
+        m_title->setAnchorPoint(ccp(0.5f, 0.25f));
         m_scroll = ScrollLayer::create(CCSize{510.0f, 245.0f});
         m_scroll->setAnchorPoint(ccp(0.5, 0.55));
 
         m_scroll->m_contentLayer->setLayout(ScrollLayer::createDefaultListLayout());
 
+        m_frames.reserve(m_mods.size());
         const auto rows = static_cast<unsigned int>(ceil(static_cast<float>(m_mods.size()) / 4.0f));
         for (unsigned int row = 0; row < rows; row++) {
             log::debug("row {}", row);
@@ -49,6 +52,7 @@ protected:
                 auto mod = &m_mods[(row * 4) + column];
                 auto frame = ModFrame::create(mod);
                 frame->setID(fmt::format("mod-{}", (row * 4) + column));
+                m_frames.push_back(frame);
                 rowNode->addChild(frame);
             }
             rowNode->updateLayout();
@@ -72,14 +76,27 @@ protected:
 
         m_downloadButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Download"), this, menu_selector(ModTogglePopup::download));
         m_downloadButton->setAnchorPoint(ccp(0, 0.5));
-
         m_buttonMenu->addChildAtPosition(m_downloadButton, Anchor::Bottom, ccp(5, 0));
+
+        m_syncToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(ModTogglePopup::syncToggler), 1.0f);
+        m_syncToggler->setAnchorPoint(ccp(1, 1));
+        m_syncToggler->setScale(0.7f);
+        m_buttonMenu->addChildAtPosition(m_syncToggler, Anchor::TopRight, ccp(-14, -5));
+
+        auto syncText = CCLabelBMFont::create("Sync All Configs", "bigFont.fnt");
+        syncText->setAnchorPoint(ccp(1, 0.5));
+        syncText->setScale(0.4f);
+        m_buttonMenu->addChildAtPosition(syncText, Anchor::TopRight, ccp(-40, -16.5f));
 
         return true;
     }
 
-    void togglerConfigSync(CCObject *sender) {
-        m_syncConfigs = !m_syncConfigs;
+    void syncToggler(CCObject *caller) {
+        log::debug("sync toggler");
+        auto toggled = m_syncToggler->isToggled();
+        for (auto frame : m_frames) {
+            frame->setConfigToggler(!toggled);
+        }
     }
 
     void cancel(CCObject *sender) {

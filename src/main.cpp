@@ -355,11 +355,6 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                 log::info("Added config for geode mod {} to sync next restart", mod.modId);
             }
 
-            if (mod.syncConfig) {
-                log::error("Faking fatal");
-                fatalErrored = true;
-                break;
-            }
             if (!mod.toInstall) continue;
             log::info("Downloading {} {}", mod.modId, mod.version);
             auto req = ModDownloadRequest(mod.modId, mod.version);

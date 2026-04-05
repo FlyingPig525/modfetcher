@@ -90,7 +90,6 @@ public:
 protected:
 
     void authorization(std::string id, std::string token) {
-
         auto basic = utils::base64::encode(fmt::format("{}:{}", id, token));
         m_request.header("Authorization", fmt::format("Basic {}", basic));
     }
