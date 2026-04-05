@@ -43,9 +43,10 @@ void ModDownloadRequest::send() {
 
 }
 
+using namespace std::chrono_literals;
 WebFunc ModDownloadRequest::sendAsync() {
     auto ver = utils::string::filter(m_modVersion, "1234567890.");
-    auto resp = co_await m_request.get(
+    auto resp = co_await m_request.timeout(15s).get(
         fmt::format(
             MOD_INFO_IP"/{}/versions/{}/download?gd={}&platforms={}",
             m_modId,
@@ -65,7 +66,7 @@ void CreateRequest::send() {
 }
 
 WebFunc CreateRequest::sendAsync() {
-    auto resp = co_await m_request.post(CREATE_IP);
+    auto resp = co_await m_request.timeout(15s).post(CREATE_IP);
     co_return resp;
 }
 
@@ -77,7 +78,7 @@ void SaveRequest::send(std::vector<SavedMod> const& mods) {
 WebFunc SaveRequest::sendAsync(std::vector<SavedMod> mods) {
     auto json = matjson::Serialize<std::vector<::SavedMod>>::toJson(mods);
     m_request.bodyJSON(json);
-    auto resp = co_await m_request.post(SAVE_IP);
+    auto resp = co_await m_request.timeout(15s).post(SAVE_IP);
     co_return resp;
 }
 
@@ -87,6 +88,6 @@ void LoadRequest::send() {
 }
 
 WebFunc LoadRequest::sendAsync() {
-    auto resp = co_await m_request.get(LOAD_IP);
+    auto resp = co_await m_request.timeout(15s).get(LOAD_IP);
     co_return resp;
 }
