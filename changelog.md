@@ -10,3 +10,7 @@
 
 ## 1.1.1
 - Adds timeouts to server requests (I honestly thought there would be timeouts by default)
+
+## 1.2.0
+- removes the fake fatal that sometimes happens :| (i forgot to get rid of it)
+- adds a button that toggles all config syncing
