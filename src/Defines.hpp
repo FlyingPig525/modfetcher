@@ -4,6 +4,7 @@
 #define BACKUP_PATH "mods-backup.zip"
 #define CONFIG_ID "configs-to-sync"
 #define STATUS_ID "sync-complete-status"
+#define DATA_ID "data-to-sync"
 #define SERVER_IP Mod::get<>()->getSettingValue<std::string>("server-ip")
 #define CREATE_IP SERVER_IP + "/create"
 #define SAVE_IP   SERVER_IP + "/save"

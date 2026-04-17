@@ -83,7 +83,7 @@ protected:
         m_syncToggler->setScale(0.7f);
         m_buttonMenu->addChildAtPosition(m_syncToggler, Anchor::TopRight, ccp(-14, -5));
 
-        auto syncText = CCLabelBMFont::create("Sync All Configs", "bigFont.fnt");
+        auto syncText = CCLabelBMFont::create("Sync All Data", "bigFont.fnt");
         syncText->setAnchorPoint(ccp(1, 0.5));
         syncText->setScale(0.4f);
         m_buttonMenu->addChildAtPosition(syncText, Anchor::TopRight, ccp(-40, -16.5f));

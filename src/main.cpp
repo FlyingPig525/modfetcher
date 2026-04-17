@@ -335,6 +335,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         int downloaded = 0;
         int configCount = 0;
         matjson::Value configs = matjson::makeObject({});
+        matjson::Value data = matjson::makeObject({});
 
         log::info("Creating backup");
         auto backupRes = backupMods();
@@ -343,6 +344,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
             AccountLayer::hideLoadingUI();
             co_return;
         }
+        // Mod::get()->getSaveContainer()
         // if something happens during the sync, give user the opportunity to load backup on next boot
         log::debug("Setting unfinished status");
         Mod::get<>()->setSavedValue(STATUS_ID, false);
@@ -351,6 +353,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         for (auto mod : mods) {
             if (mod.syncConfig) {
                 configs.set(mod.modId, mod.config);
+                data.set(mod.modId, mod.data);
                 configCount++;
                 log::info("Added config for geode mod {} to sync next restart", mod.modId);
             }
@@ -417,6 +420,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
         }
 
         Mod::get()->setSavedValue(CONFIG_ID, configs);
+        Mod::get()->setSavedValue(DATA_ID, data);
 
         m_fields->m_requestInProgress = false;
         queueInMainThread([self = Ref(this), fatalErrored, nonFatalErrors, downloaded, configCount, backupPath] {
@@ -433,7 +437,7 @@ struct AccountMenu : Modify<AccountMenu, AccountLayer> {
                             auto alert = FLAlertLayer::create("Backup Error!", "There was an <cr>error</c> restoring the backup!", "Ok");
                             alert->show();
                         } else {
-                            Mod::get()->setSavedValue("configs-to-sync", matjson::makeObject({}));
+                            Mod::get()->setSavedValue(CONFIG_ID, matjson::makeObject({}));
                         }
                     }
                 );

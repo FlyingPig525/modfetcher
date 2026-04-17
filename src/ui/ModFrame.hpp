@@ -123,7 +123,7 @@ protected:
         m_configMenu->setContentSize(CCSize{0.0f, 0.0f});
         m_configMenu->setScale(0.775f);
 
-        auto configText = CCLabelBMFont::create("Config", "bigFont.fnt");
+        auto configText = CCLabelBMFont::create("Data", "bigFont.fnt");
         m_configMenu->addChild(configText);
 
         m_configToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(ModFrame::toggleConfig), 1.0f);

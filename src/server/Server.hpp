@@ -18,6 +18,7 @@ struct SavedMod {
     std::string modId;
     std::string version;
     matjson::Value config;
+    matjson::Value data;
     bool installed = false;
     bool sameOrBetterVersion = false;
     bool toInstall = !sameOrBetterVersion;
@@ -26,15 +27,18 @@ struct SavedMod {
     Result<> trySetModConfig() {
         auto mod = Loader::get()->getLoadedMod(modId);
         auto manager = ModSettingsManager::from(mod);
+        mod->getSaveContainer() = data;
         return manager->load(this->config);
     }
 
     static SavedMod fromMod(geode::Mod *mod) {
         auto manager = ModSettingsManager::from(mod);
+        log::debug("{}", mod->getSaveContainer().dump());
         return SavedMod{
             .modId = mod->getID(),
             .version = mod->getVersion().toVString(true),
             .config = manager->getSaveData(),
+            .data = mod->getSaveContainer(),
             .installed = true,
             .sameOrBetterVersion = true
         };
@@ -51,7 +55,8 @@ struct matjson::Serialize<::SavedMod> {
         GEODE_UNWRAP_INTO(std::string modId, value["modId"].asString());
         GEODE_UNWRAP_INTO(std::string version, value["version"].asString());
         Value config = value["config"];
-        return Ok(::SavedMod{ modId, version, config });
+        Value data = value["data"];
+        return Ok(::SavedMod{ modId, version, config, data });
     }
 
     static Value toJson(::SavedMod const& mod) {
@@ -59,6 +64,7 @@ struct matjson::Serialize<::SavedMod> {
         value["modId"] = mod.modId;
         value["version"] = mod.version;
         value["config"] = mod.config;
+        value["data"] = mod.data;
         return value;
     }
 };
