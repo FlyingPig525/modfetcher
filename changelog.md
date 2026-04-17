@@ -14,3 +14,6 @@
 ## 1.2.0
 - removes the fake fatal that sometimes happens :| (i forgot to get rid of it)
 - adds a button that toggles all config syncing
+
+# 1.3.0
+- saves mods' misc values
